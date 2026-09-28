@@ -138,7 +138,6 @@ export async function POST(req: NextRequest) {
     await sendConfirmationEmail({
       to: email,
       fullName,
-      eventName: event.name,
       qrPngBuffer: qrPng,
     });
     await db.from("registrations").update({ email_status: "sent", email_error: null }).eq("id", registrationId);
