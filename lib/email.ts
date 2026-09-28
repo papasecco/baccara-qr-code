@@ -1,9 +1,17 @@
-import { Resend } from "resend";
+import nodemailer from "nodemailer";
 
-function resendClient() {
-  const key = process.env.RESEND_API_KEY;
-  if (!key) throw new Error("RESEND_API_KEY mancante");
-  return new Resend(key);
+function transporter() {
+  const host = process.env.SMTP_HOST;
+  const user = process.env.SMTP_USER;
+  const pass = process.env.SMTP_PASS;
+  if (!host || !user || !pass) throw new Error("Configurazione SMTP mancante (SMTP_HOST / SMTP_USER / SMTP_PASS)");
+  return nodemailer.createTransport({
+    host,
+    port: Number(process.env.SMTP_PORT ?? 587),
+    secure: false,
+    requireTLS: true,
+    auth: { user, pass },
+  });
 }
 
 function escapeHtml(s: string) {
@@ -36,8 +44,7 @@ export async function sendConfirmationEmail(opts: {
     <img src="cid:qrcode" alt="QR code ingresso" width="240" height="240" style="border:1px solid #eee; border-radius:8px;" />
   </div>`;
 
-  const resend = resendClient();
-  const result = await resend.emails.send({
+  return transporter().sendMail({
     from,
     to,
     subject: "FRIDAY OPENING PARTY — Iscrizione confermata ✅",
@@ -45,14 +52,10 @@ export async function sendConfirmationEmail(opts: {
     attachments: [
       {
         filename: "qrcode.png",
-        content: qrPngBuffer.toString("base64"),
-        inlineContentId: "qrcode",
+        content: qrPngBuffer,
+        contentType: "image/png",
+        cid: "qrcode",
       },
     ],
   });
-
-  if (result.error) {
-    throw new Error(result.error.message);
-  }
-  return result.data;
 }
