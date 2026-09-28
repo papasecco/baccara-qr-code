@@ -40,7 +40,7 @@ export async function sendConfirmationEmail(opts: {
       {
         filename: "qrcode.png",
         content: qrPngBuffer.toString("base64"),
-        contentId: "qrcode",
+        inlineContentId: "qrcode",
       },
     ],
   });
