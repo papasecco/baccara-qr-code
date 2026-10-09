@@ -26,13 +26,19 @@ export async function sendConfirmationEmail(opts: {
   to: string;
   fullName?: string | null;
   ticketType?: string | null;
+  eventName?: string | null;
   qrPngBuffer: Buffer;
 }) {
-  const { to, fullName, ticketType, qrPngBuffer } = opts;
+  const { to, fullName, ticketType, eventName, qrPngBuffer } = opts;
   const from = process.env.EMAIL_FROM;
   if (!from) throw new Error("EMAIL_FROM mancante");
 
   const name = fullName ? `${escapeHtml(fullName.trim())}, ` : "";
+  const isLocura = eventName?.trim().toUpperCase() === "LOCURA";
+  const offerHtml = isLocura
+    ? `<p style="margin: 0 0 24px; font-size: 18px; font-weight: 600;">Ingresso 20€ con 2 drink</p>`
+    : `<p style="margin: 0 0 4px; font-size: 18px; font-weight: 600;">Ridotto in lista 10€</p>
+    <p style="margin: 0 0 24px; color: #555;">valido entro 1:00</p>`;
   const ticketHtml = ticketType
     ? `<p style="margin: 16px 0 0; font-size: 20px; font-weight: 700;">${escapeHtml(ticketType)}</p>`
     : "";
@@ -42,8 +48,7 @@ export async function sendConfirmationEmail(opts: {
     <h1 style="margin: 0 0 4px; font-size: 24px; letter-spacing: 1px;">FRIDAY OPENING PARTY</h1>
     <p style="margin: 0 0 24px; color: #555;">Venerdì 16 Ottobre 2026</p>
     <h2 style="margin: 0 0 16px; font-size: 20px;">${name}ISCRIZIONE CONFERMATA ✅</h2>
-    <p style="margin: 0 0 4px; font-size: 18px; font-weight: 600;">Ridotto in lista 10€</p>
-    <p style="margin: 0 0 24px; color: #555;">valido entro 1:00</p>
+    ${offerHtml}
     <p style="margin: 0 0 16px;">Mostra questo QrCode all’ingresso del locale</p>
     <img src="cid:qrcode" alt="QR code ingresso" width="240" height="240" style="border:1px solid #eee; border-radius:8px;" />
     ${ticketHtml}
