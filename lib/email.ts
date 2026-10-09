@@ -25,13 +25,17 @@ function escapeHtml(s: string) {
 export async function sendConfirmationEmail(opts: {
   to: string;
   fullName?: string | null;
+  ticketType?: string | null;
   qrPngBuffer: Buffer;
 }) {
-  const { to, fullName, qrPngBuffer } = opts;
+  const { to, fullName, ticketType, qrPngBuffer } = opts;
   const from = process.env.EMAIL_FROM;
   if (!from) throw new Error("EMAIL_FROM mancante");
 
   const name = fullName ? `${escapeHtml(fullName.trim())}, ` : "";
+  const ticketHtml = ticketType
+    ? `<p style="margin: 16px 0 0; font-size: 20px; font-weight: 700;">${escapeHtml(ticketType)}</p>`
+    : "";
 
   const html = `
   <div style="font-family: -apple-system, Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 24px 16px; color: #111; text-align: center;">
@@ -42,6 +46,7 @@ export async function sendConfirmationEmail(opts: {
     <p style="margin: 0 0 24px; color: #555;">valido entro 1:00</p>
     <p style="margin: 0 0 16px;">Mostra questo QrCode all’ingresso del locale</p>
     <img src="cid:qrcode" alt="QR code ingresso" width="240" height="240" style="border:1px solid #eee; border-radius:8px;" />
+    ${ticketHtml}
   </div>`;
 
   return transporter().sendMail({

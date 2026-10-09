@@ -26,8 +26,28 @@ type TypeformAnswer = {
   type: string;
   text?: string;
   email?: string;
+  choice?: { label?: string; other?: string };
+  choices?: { labels?: string[]; other?: string };
   field: { ref?: string; id: string; type: string };
 };
+
+type TypeformDefinitionField = { id: string; ref?: string; title?: string };
+
+const TICKET_REFS = ["ticket", "ticket_type", "tipologia_ticket"];
+
+// Trova la risposta al campo "tipologia ticket": per ref (ticket, ticket_type, tipologia_ticket)
+// oppure, in mancanza, per titolo della domanda che contiene "ticket" o "tipologia".
+function extractTicketType(answers: TypeformAnswer[], fields: TypeformDefinitionField[]): string | null {
+  const field = fields.find(
+    (f) => (f.ref && TICKET_REFS.includes(f.ref)) || /ticket|tipologia/i.test(f.title ?? "")
+  );
+  if (!field) return null;
+  const a = answers.find((x) => x.field?.id === field.id);
+  if (!a) return null;
+  const value =
+    a.choice?.label ?? a.choice?.other ?? a.choices?.labels?.join(", ") ?? a.choices?.other ?? a.text ?? null;
+  return value ? value.trim() : null;
+}
 
 function extractEmailAndName(answers: TypeformAnswer[]): { email: string | null; fullName: string | null } {
   let email: string | null = null;
@@ -63,6 +83,8 @@ export async function POST(req: NextRequest) {
   const formId: string | undefined = payload?.form_response?.form_id;
   const responseToken: string | undefined = payload?.form_response?.token;
   const answers: TypeformAnswer[] = payload?.form_response?.answers ?? [];
+  const definitionFields: TypeformDefinitionField[] = payload?.form_response?.definition?.fields ?? [];
+  const ticketType = extractTicketType(answers, definitionFields);
 
   if (!formId || !responseToken) {
     return NextResponse.json({ error: "payload inatteso" }, { status: 400 });
@@ -138,6 +160,7 @@ export async function POST(req: NextRequest) {
     await sendConfirmationEmail({
       to: email,
       fullName,
+      ticketType,
       qrPngBuffer: qrPng,
     });
     await db.from("registrations").update({ email_status: "sent", email_error: null }).eq("id", registrationId);
