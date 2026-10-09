@@ -36,7 +36,7 @@ export async function sendConfirmationEmail(opts: {
   const name = fullName ? `${escapeHtml(fullName.trim())}, ` : "";
   const isLocura = eventName?.trim().toUpperCase() === "LOCURA";
   const offerHtml = isLocura
-    ? `<p style="margin: 0 0 24px; font-size: 18px; font-weight: 600;">Ingresso 20€ con 2 drink</p>`
+    ? ""
     : `<p style="margin: 0 0 4px; font-size: 18px; font-weight: 600;">Ridotto in lista 10€</p>
     <p style="margin: 0 0 24px; color: #555;">valido entro 1:00</p>`;
   const ticketHtml = ticketType
