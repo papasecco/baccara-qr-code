@@ -12,6 +12,15 @@ function eventNameOf(reg: any): string | undefined {
   return Array.isArray(rel) ? rel[0]?.name : rel?.name;
 }
 
+// Solo per la lista LOCURA: la scelta del ticket ("10€" / "20€ - 2 drinks") è l'unica domanda a scelta del form.
+function ticketTypeOf(reg: any): string | null {
+  if (eventNameOf(reg)?.trim().toUpperCase() !== "LOCURA") return null;
+  const answers: any[] = Array.isArray(reg?.raw_answers) ? reg.raw_answers : [];
+  const a = answers.find((x) => x?.type === "choice" || x?.type === "choices");
+  const value = a?.choice?.label ?? a?.choice?.other ?? a?.choices?.labels?.join(", ") ?? null;
+  return value ? String(value).trim() : null;
+}
+
 export async function POST(req: NextRequest) {
   const session = cookies().get(SESSION_COOKIE_NAME)?.value;
   if (!(await verifySessionToken(session))) {
@@ -31,7 +40,7 @@ export async function POST(req: NextRequest) {
 
   const { data: reg, error } = await db
     .from("registrations")
-    .select("id, status, email, full_name, scanned_at, event:events(name)")
+    .select("id, status, email, full_name, scanned_at, raw_answers, event:events(name)")
     .eq("id", token)
     .maybeSingle();
 
@@ -48,6 +57,7 @@ export async function POST(req: NextRequest) {
       full_name: reg.full_name,
       email: reg.email,
       event_name: eventNameOf(reg),
+      ticket_type: ticketTypeOf(reg),
       scanned_at: reg.scanned_at,
     });
   }
@@ -79,6 +89,7 @@ export async function POST(req: NextRequest) {
       full_name: reg.full_name,
       email: reg.email,
       event_name: eventNameOf(reg),
+      ticket_type: ticketTypeOf(reg),
       scanned_at: now?.scanned_at ?? null,
     });
   }
@@ -88,5 +99,6 @@ export async function POST(req: NextRequest) {
     full_name: reg.full_name,
     email: reg.email,
     event_name: eventNameOf(reg),
+      ticket_type: ticketTypeOf(reg),
   });
 }
