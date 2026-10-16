@@ -10,11 +10,17 @@ type EventStat = {
   total_scanned: number;
   total_valid: number;
   total_void: number;
+  total_unique: number;
 };
 
 type StatsResponse = {
   events: EventStat[];
-  totals: { total_registered: number; total_scanned: number };
+  totals: {
+    total_registered: number;
+    total_scanned: number;
+    total_unique: number;
+    total_unique_scanned: number;
+  };
 };
 
 export default function DashboardPage() {
@@ -56,6 +62,7 @@ export default function DashboardPage() {
           <div
             style={{
               display: "flex",
+              flexWrap: "wrap",
               gap: 16,
               marginBottom: 24,
               padding: 20,
@@ -65,6 +72,8 @@ export default function DashboardPage() {
           >
             <Stat label="Iscritti totali" value={data.totals.total_registered} />
             <Stat label="Entrati" value={data.totals.total_scanned} accent="#22c55e" />
+            <Stat label="Clienti unici (mail)" value={data.totals.total_unique} />
+            <Stat label="Unici entrati" value={data.totals.total_unique_scanned} accent="#22c55e" />
           </div>
 
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
@@ -72,6 +81,7 @@ export default function DashboardPage() {
               <tr style={{ textAlign: "left", color: "#a1a1aa", fontSize: 13 }}>
                 <th style={{ padding: "8px 4px" }}>PR / Typeform</th>
                 <th style={{ padding: "8px 4px" }}>Iscritti</th>
+                <th style={{ padding: "8px 4px" }}>Unici</th>
                 <th style={{ padding: "8px 4px" }}>Entrati</th>
                 <th style={{ padding: "8px 4px" }}>%</th>
               </tr>
@@ -86,6 +96,7 @@ export default function DashboardPage() {
                       {!ev.is_active && <span style={{ color: "#71717a", fontSize: 12 }}> (disattivo)</span>}
                     </td>
                     <td style={{ padding: "10px 4px" }}>{ev.total_registered}</td>
+                    <td style={{ padding: "10px 4px" }}>{ev.total_unique}</td>
                     <td style={{ padding: "10px 4px", color: "#22c55e", fontWeight: 600 }}>{ev.total_scanned}</td>
                     <td style={{ padding: "10px 4px" }}>{pct}%</td>
                   </tr>
