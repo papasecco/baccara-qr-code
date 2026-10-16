@@ -33,6 +33,7 @@ export async function GET() {
       .select("event_id, email, status")
       .neq("status", "void")
       .order("created_at", { ascending: true })
+      .order("id", { ascending: true })
       .range(from, from + PAGE - 1);
     if (pageErr) {
       console.error(pageErr);
