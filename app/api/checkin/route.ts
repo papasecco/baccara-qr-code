@@ -55,15 +55,32 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ result: "void" }, { status: 200 });
   }
 
-  const { error: updateErr } = await db
+  const { data: updated, error: updateErr } = await db
     .from("registrations")
     .update({ status: "scanned", scanned_at: new Date().toISOString() })
     .eq("id", token)
-    .eq("status", "valid"); // guardia extra anti doppia-scansione in concorrenza
+    .eq("status", "valid")
+    .select("id");
 
   if (updateErr) {
     console.error(updateErr);
     return NextResponse.json({ error: "errore aggiornamento" }, { status: 500 });
+  }
+
+  // Nessuna riga aggiornata: un altro telefono ha scansionato lo stesso QR un istante prima.
+  if (!updated || updated.length === 0) {
+    const { data: now } = await db
+      .from("registrations")
+      .select("scanned_at")
+      .eq("id", token)
+      .maybeSingle();
+    return NextResponse.json({
+      result: "already_scanned",
+      full_name: reg.full_name,
+      email: reg.email,
+      event_name: eventNameOf(reg),
+      scanned_at: now?.scanned_at ?? null,
+    });
   }
 
   return NextResponse.json({
