@@ -2,24 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { supabaseAdmin } from "@/lib/supabase";
 import { SESSION_COOKIE_NAME, verifySessionToken } from "@/lib/auth";
+import { eventNameOf, ticketTypeOf } from "@/lib/registration";
 
 export const runtime = "nodejs";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-function eventNameOf(reg: any): string | undefined {
-  const rel = reg?.event;
-  return Array.isArray(rel) ? rel[0]?.name : rel?.name;
-}
-
-// Solo per la lista LOCURA: la scelta del ticket ("10€" / "20€ - 2 drinks") è l'unica domanda a scelta del form.
-function ticketTypeOf(reg: any): string | null {
-  if (eventNameOf(reg)?.trim().toUpperCase() !== "LOCURA") return null;
-  const answers: any[] = Array.isArray(reg?.raw_answers) ? reg.raw_answers : [];
-  const a = answers.find((x) => x?.type === "choice" || x?.type === "choices");
-  const value = a?.choice?.label ?? a?.choice?.other ?? a?.choices?.labels?.join(", ") ?? null;
-  return value ? String(value).trim() : null;
-}
 
 export async function POST(req: NextRequest) {
   const session = cookies().get(SESSION_COOKIE_NAME)?.value;
