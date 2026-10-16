@@ -58,7 +58,22 @@ export default function ScanPage() {
   const [error, setError] = useState<string | null>(null);
   const busyRef = useRef(false);
   const lastCodeRef = useRef<string | null>(null);
-  const lastSeenRef = useRef(0);
+  const [newVersion, setNewVersion] = useState(false);
+
+  useEffect(() => {
+    const build = process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA;
+    if (!build) return;
+    const timer = setInterval(async () => {
+      try {
+        const res = await fetch("/api/version", { cache: "no-store" });
+        const { v } = await res.json();
+        if (v && v !== build) setNewVersion(true);
+      } catch {
+        // ignora errori di rete
+      }
+    }, 60000);
+    return () => clearInterval(timer);
+  }, []);
 
   const [query, setQuery] = useState("");
   const [hits, setHits] = useState<SearchHit[]>([]);
@@ -81,16 +96,12 @@ export default function ScanPage() {
           { facingMode: "environment" },
           { fps: 10, qrbox: { width: 260, height: 260 } },
           async (decodedText: string) => {
-            // Lo stesso QR ancora inquadrato non va riletto: il risultato resta a schermo
-            // finché non viene inquadrato un altro QR (o lo stesso dopo averlo tolto dalla vista).
-            const now = Date.now();
-            if (decodedText === lastCodeRef.current && now - lastSeenRef.current < 4000) {
-              lastSeenRef.current = now;
-              return;
-            }
+            // Stesso QR dell'ultimo controllo: non succede nulla, il risultato resta a schermo.
+            // Un nuovo controllo parte solo quando viene inquadrato un QR diverso
+            // (oppure dopo aver premuto "Nuova scansione").
+            if (decodedText === lastCodeRef.current) return;
             if (busyRef.current) return;
             lastCodeRef.current = decodedText;
-            lastSeenRef.current = now;
             busyRef.current = true;
             setBusy(true);
             try {
@@ -203,6 +214,24 @@ export default function ScanPage() {
 
   return (
     <main style={{ maxWidth: 480, margin: "0 auto", padding: "20px" }}>
+      {newVersion && (
+        <button
+          onClick={() => window.location.reload()}
+          style={{
+            width: "100%",
+            marginBottom: 12,
+            padding: 12,
+            borderRadius: 10,
+            border: "none",
+            background: "#eab308",
+            color: "#1c1917",
+            fontWeight: 700,
+            fontSize: 15,
+          }}
+        >
+          Nuova versione disponibile: tocca per aggiornare
+        </button>
+      )}
       <h1 style={{ textAlign: "center", fontSize: 20 }}>Scansione ingressi</h1>
       <div
         id="qr-reader"
@@ -223,6 +252,26 @@ export default function ScanPage() {
         {banner.text}
       </div>
       {showLocura && <LocuraBadge ticketType={lastResult?.ticket_type} />}
+      {lastResult && !busy && (
+        <button
+          onClick={() => {
+            lastCodeRef.current = null;
+            setLastResult(null);
+          }}
+          style={{
+            marginTop: 12,
+            width: "100%",
+            padding: 10,
+            borderRadius: 10,
+            border: "1px solid #3f3f46",
+            background: "transparent",
+            color: "#a1a1aa",
+            fontSize: 14,
+          }}
+        >
+          Nuova scansione
+        </button>
+      )}
       {error && <p style={{ color: "#f87171" }}>{error}</p>}
 
       <h2 style={{ fontSize: 17, marginTop: 32, marginBottom: 8 }}>Cerca manualmente</h2>
