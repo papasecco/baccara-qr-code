@@ -57,6 +57,8 @@ export default function ScanPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const busyRef = useRef(false);
+  const lastCodeRef = useRef<string | null>(null);
+  const lastSeenRef = useRef(0);
 
   const [query, setQuery] = useState("");
   const [hits, setHits] = useState<SearchHit[]>([]);
@@ -79,7 +81,16 @@ export default function ScanPage() {
           { facingMode: "environment" },
           { fps: 10, qrbox: { width: 260, height: 260 } },
           async (decodedText: string) => {
+            // Lo stesso QR ancora inquadrato non va riletto: il risultato resta a schermo
+            // finché non viene inquadrato un altro QR (o lo stesso dopo averlo tolto dalla vista).
+            const now = Date.now();
+            if (decodedText === lastCodeRef.current && now - lastSeenRef.current < 4000) {
+              lastSeenRef.current = now;
+              return;
+            }
             if (busyRef.current) return;
+            lastCodeRef.current = decodedText;
+            lastSeenRef.current = now;
             busyRef.current = true;
             setBusy(true);
             try {
@@ -92,13 +103,13 @@ export default function ScanPage() {
               setLastResult(data);
               setError(null);
             } catch (e) {
+              lastCodeRef.current = null;
               setError("Errore di rete, riprova");
             } finally {
-              // Piccola pausa prima di accettare un nuovo scan, per evitare doppie letture dello stesso QR
+              setBusy(false);
               setTimeout(() => {
                 busyRef.current = false;
-                setBusy(false);
-              }, 1500);
+              }, 800);
             }
           },
           () => {
