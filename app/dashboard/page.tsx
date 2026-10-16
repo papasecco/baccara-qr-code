@@ -20,6 +20,8 @@ type StatsResponse = {
     total_scanned: number;
     total_unique: number;
     total_unique_scanned: number;
+    registered_today: number;
+    registered_last_hour: number;
   };
 };
 
@@ -74,6 +76,8 @@ export default function DashboardPage() {
             <Stat label="Entrati" value={data.totals.total_scanned} accent="#22c55e" />
             <Stat label="Clienti unici (mail)" value={data.totals.total_unique} />
             <Stat label="Unici entrati" value={data.totals.total_unique_scanned} accent="#22c55e" />
+            <Stat label="Iscritti oggi" value={data.totals.registered_today} />
+            <Stat label="Iscritti ultima ora" value={data.totals.registered_last_hour} />
           </div>
 
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
